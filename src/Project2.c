@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include "clock_config.h"
 #include "uart.h"
+#include "led.h"
 #include "MKL25Z4.h"
 /*
  * @brief   Application entry point.
@@ -33,11 +34,14 @@ int main(void) {
   	/* Init board hardware. */
     BOARD_InitBootClocks();
 
-    //PORTA = 1 - PORTA clock enabled
-    SIM->SCGC5 = SIM_SCGC5_PORTA(1);
+//    //PORTA = 1 - PORTA clock enabled
+//    SIM->SCGC5 = SIM_SCGC5_PORTA(1);
 
     //Initialize UART0
     UART_init();
+
+    //Inialize the GPIO for LED blinking
+    LED_init();
 
     printf("Hello World\n");
 
@@ -46,8 +50,11 @@ int main(void) {
     /* Enter an infinite loop, just incrementing a counter. */
     while(1) {
         i++;
-       	temp = UART_RX_block();
+#ifdef UART_BLOCKING
+        LED_toggle();
+        temp = UART_RX_block();
        	UART_TX_block(temp);
+#endif
     }
     return 0 ;
 }
