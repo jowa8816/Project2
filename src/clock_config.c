@@ -40,6 +40,29 @@ product: Clocks v4.0
  
 /* This is a template for board specific configuration created by MCUXpresso IDE Project Wizard.*/
 
+/*****************************************************************************
+* Copyright (C) 2019 by Jon Warriner
+*
+* Redistribution, modification or use of this software in source or binary
+* forms is permitted as long as the files maintain this copyright. Users are
+* permitted to modify this and use it to learn about the field of embedded
+* software. Jon Warriner and the University of Colorado are not liable for
+* any misuse of this material.
+*
+*****************************************************************************/
+/**
+* @file clock_config.c
+* @brief Configure CPU clocks
+*
+* This source file was provided as a blank template from NXP.  All code was filled
+* in by me.
+*
+* @author Jon Warriner
+* @date March 28, 2019
+* @version 1.0
+*
+*/
+
 #include "MKL25Z4.h"
 #include "clock_config.h"
 
