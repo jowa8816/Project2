@@ -24,12 +24,23 @@
 #include "clock_config.h"
 #include "uart.h"
 #include "led.h"
+#include "ring.h"
 #include "MKL25Z4.h"
+
+#ifndef UART_BLOCKING
+#define TXRX_BUF_SIZE	16
+ring_t *txrx_buf = 0;
+//some test code to check how full the buffer gets
+int32_t max = 0;
+#endif
+
 /*
  * @brief   Application entry point.
  */
 int main(void) {
+#ifdef UART_BLOCKING
 	char temp;
+#endif
 
   	/* Init board hardware. */
     BOARD_InitBootClocks();
@@ -43,6 +54,10 @@ int main(void) {
     //Inialize the GPIO for LED blinking
     LED_init();
 
+#ifndef UART_BLOCKING
+    txrx_buf = ring_init(TXRX_BUF_SIZE);
+#endif
+
     printf("Hello World\n");
 
     /* Force the counter to be placed into memory. */
@@ -51,10 +66,37 @@ int main(void) {
     while(1) {
         i++;
 #ifdef UART_BLOCKING
-        LED_toggle();
         temp = UART_RX_block();
        	UART_TX_block(temp);
+#else
+        LED_toggle();
 #endif
     }
     return 0 ;
 }
+
+#ifndef UART_BLOCKING
+void UART0_DriverIRQHandler(void)
+{
+char temp;
+
+	//if the UART has a character available, grab it and put it in the ring buffer
+	if(UART_RX_full())
+	{
+		insert(txrx_buf, UART_RX());
+	}
+
+	//just some test code to see how full the buffer gets
+	if(entries(txrx_buf) > max)
+	{
+		max = entries(txrx_buf);
+	}
+
+	//if the UART is ready to transmit, and we still have data in the buffer, then grab the next character and transmit it.
+	if(UART_TX_rdy() && (entries(txrx_buf) != 0))
+	{
+		extract(txrx_buf, &temp);
+		UART_TX(temp);
+	}
+}
+#endif

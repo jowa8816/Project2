@@ -56,8 +56,20 @@ void UART_init()
     //OSR = 0xF (should alread be power-up default)
     UART0->C4 = UART0_C4_OSR(0xF);
 
+#ifndef UART_BLOCKING
+    //set UART0 interrupt priority to 0
+#define UART_PRI	0
+    NVIC->IP[_IP_IDX(UART0_IRQn)]  = ((uint32_t)(NVIC->IP[_IP_IDX(UART0_IRQn)]  & ~(0xFFUL << _BIT_SHIFT(UART0_IRQn))) |
+       (((UART_PRI << (8U - __NVIC_PRIO_BITS)) & (uint32_t)0xFFUL) << _BIT_SHIFT(UART0_IRQn)));
+
+    //enable the UART IRQ
+    NVIC->ISER[0U] = (uint32_t)(1UL << (((uint32_t)(int32_t)UART0_IRQn) & 0x1FUL));
+
+    UART0->C2 |= UART0_C2_RIE(1);
+#endif
+
     //enable receiver and transmitter
-    UART0->C2 = UART0_C2_RE(1) | UART0_C2_TE(1);
+    UART0->C2 |= UART0_C2_RE(1) | UART0_C2_TE(1);
 
 }
 
@@ -98,3 +110,4 @@ char UART_RX_block()
 	//Now we can grab the character
 	return(UART_RX());
 }
+

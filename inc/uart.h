@@ -26,7 +26,7 @@
 
 #include <stdint.h>
 
-#define UART_BLOCKING
+//#define UART_BLOCKING
 
 /**
 * @brief Initialize UART0
