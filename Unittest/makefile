@@ -19,17 +19,21 @@
 # @date March 14, 2019
 # @version 1.0
 #
-ringtest : ring_test.o ring.o
-	cc -o ringtest ring_test.o ring.o -lcunit
 
-ring_test.o : ring_test.c ring.h
-	cc -Wall -Werror -c ring_test.c
+INC = ../inc/
+SRC = ../src/
 
-ring.o : ring.c ring.h
-	cc -Wall -Werror -c ring.c
+ringtest : unittest.o ring.o
+	cc -o ringtest unittest.o ring.o -lcunit
+
+unittest.o : unittest.c $(INC)ring.h
+	cc -Wall -Werror -I$(INC) -c unittest.c
+
+ring.o : $(SRC)ring.c $(INC)ring.h
+	cc -Wall -Werror -I$(INC) -c $(SRC)ring.c
 
 clean :
-	rm ringtest ring_test.o ring.o
+	rm ringtest unittest.o ring.o
 
 test : ringtest
 	./ringtest

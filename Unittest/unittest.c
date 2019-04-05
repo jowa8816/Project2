@@ -73,12 +73,12 @@ int clean_suite1(void)
 void testINIT(void)
 {
     // first try a length of 0.  This is invalid and should return 0
-    ring = init(0);
+    ring = ring_init(0);
     CU_ASSERT(0 == ring);
 
     // now try a valid length
     // check that we got a non-zero pointer
-    ring = init(TEST_LENGTH);
+    ring = ring_init(TEST_LENGTH);
     CU_ASSERT(0 != ring);
 
     // check that the structure members make sense after initialization
