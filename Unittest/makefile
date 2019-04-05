@@ -27,7 +27,7 @@ ringtest : unittest.o ring.o
 	cc -o ringtest unittest.o ring.o -lcunit
 	
 longtest : unittest_long.o ring.o
-	cc -o ringtest unittest.o ring.o -lcunit
+	cc -o longtest unittest_long.o ring.o -lcunit
 
 unittest.o : unittest.c $(INC)ring.h
 	cc -Wall -Werror -I$(INC) -c unittest.c
