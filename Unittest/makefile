@@ -25,6 +25,9 @@ SRC = ../src/
 
 ringtest : unittest.o ring.o
 	cc -o ringtest unittest.o ring.o -lcunit
+	
+longtest : unittest_long.o ring.o
+	cc -o ringtest unittest.o ring.o -lcunit
 
 unittest.o : unittest.c $(INC)ring.h
 	cc -Wall -Werror -I$(INC) -c unittest.c
@@ -32,9 +35,15 @@ unittest.o : unittest.c $(INC)ring.h
 ring.o : $(SRC)ring.c $(INC)ring.h
 	cc -Wall -Werror -I$(INC) -c $(SRC)ring.c
 
+unittest_long.o : unittest_long.c $(INC)ring.h
+	cc -Wall -Werror -I$(INC) -c unittest_long.c
+
 clean :
-	rm ringtest unittest.o ring.o
+	rm ringtest unittest.o ring.o unittest_long.o
 
 test : ringtest
 	./ringtest
+
+test_long : longtest
+	./longtest
 
