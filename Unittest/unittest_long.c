@@ -29,10 +29,16 @@
 #include <CUnit/Basic.h>
 
 //#define DEBUG		//uncomment this to display detailed buffer info for each step of the tests
-#define TEST_LENGTH 8	//Buffer length must be a power of 2. 
-#define TEST_DURATION 1000 
+#define TEST_LENGTH 64	//Buffer length must be a power of 2. 
+#define TEST_DURATION 1000000 
 
 ring_t *ring = 0;
+ring_t *ring2 = 0;
+
+uint32_t g_inserts = 0;
+uint32_t f_inserts = 0;
+uint32_t g_extracts = 0;
+uint32_t f_extracts = 0;
 
 #ifdef DEBUG
 // Debug function to display the ring buffer parameters and contents
@@ -75,308 +81,80 @@ int clean_suite1(void)
  */
 void testLONG(void)
 {
-	uint32_t i;
-	int32_t ents;
-	int32_t r;
-	int32_t err;
-	char wdata = 5;
-	char rdata = 0;
+    int32_t i;
+    int32_t ents;
+    int32_t r;
+    int32_t err;
+    char wdata = 5;
+    char rdata = 0;
+    char rdata2 = 0;
 	
     // Create a buffer
     // check that we got a non-zero pointer
     ring = ring_init(TEST_LENGTH);
     CU_ASSERT(0 != ring);
+
+    // Create a second buffer
+    // this one is intended to have the same data as the first
+    // we'll use this to compare and check
+    ring2 = ring_init(TEST_LENGTH);
+    CU_ASSERT(0 != ring2);
 	
-	srand(time(0));
+    srand(time(0));
 	
-	for(i = 0; i < TEST_DURATION; i++)
-	{
-		ents = entries(ring);
+    for(i = 0; i < TEST_DURATION; i++)
+    {
+        //get the number of current entries in the buffer
+        //we will use this to determine whether or not to expect
+        //an error when we insert or extract to/from the buffer
+        ents = entries(ring);
 		
-		r = rand();
+        r = rand();
 		
-		//if r is even, insert a character into the buffer
-		//if r is odd, extract a character from the buffer
-		if(r & 0x1)
-		{
-			err = insert(ring, wdata);
+        //if r is odd, insert a character into the buffer
+        //if r is even, extract a character from the buffer
+        if(r & 0x1)
+        {
+            wdata = (char)(rand() & 0x00FF);
+            err = insert(ring, wdata);
 			
-			if(ents < TEST_LENGTH)
-			{
-				CU_ASSERT(err == 0);
-			}
-			else
-			{
-				CU_ASSERT(err != 0);
-			}
-		}
-		else
-		{
-			err = extract(ring, &rdata);
+            //if the buffer is full we should expect a non-zero error
+            if(ents < TEST_LENGTH)
+            {
+                CU_ASSERT(err == 0);
+                // assume everything went ok and insert data into the second buffer as well
+                err = insert(ring2, wdata);
+                g_inserts++;
+            }
+            else
+            {
+                CU_ASSERT(err != 0);
+                f_inserts++;
+            }
+        }
+        else
+        {
+            err = extract(ring, &rdata);
 			
-			if(ents != 0)
-			{
-				CU_ASSERT(err == 0);
-			}
-			else
-			{
-				CU_ASSERT(err != 0);
-			}
-		}
+            //if the buffer is empty we should expect a non-zero error
+            if(ents != 0)
+            {
+                CU_ASSERT(err == 0);
+                //assume the extract went ok and extract from the second buffer as well.  
+                //the dat from the first and second buffers should match
+                err = extract(ring2, &rdata2);
+                CU_ASSERT(rdata == rdata2);
+                g_extracts++;
+            }
+            else
+            {
+                CU_ASSERT(err != 0);
+                f_extracts++;
+            }
+        }
 		
-	}
-
-    // check that the structure members make sense after initialization
-    CU_ASSERT(ring->Buffer != 0);
-    CU_ASSERT(ring->Length == TEST_LENGTH);
-    CU_ASSERT(ring->Ini == 0);
-    CU_ASSERT(ring->Outi == 0);
-}
-
-/* Simple test of insert().
- * First, we will verify the the function correctly returns an error
- * for an invalide pointer.
- * Next, we will attempt to fill the buffer and verify each insertion.
- * Finally, we will attempt one more insertion and verify that we get
- * an error for attempting to insert into a full buffer.  
- * 
- */
-void testINSERT(void)
-{
-int32_t i;
-int32_t err;
-int32_t ents;
-char data = 1;
-
-    // first, pass a NULL pointer for ring.  This should return -1
-    err = insert((ring_t *)0, data);
-    CU_ASSERT(err == -1);
-
-    // attempt to fill the buffer with incrementing data
-    // check the elements of the structure and number of
-    // entries after each insertion.
-#ifdef DEBUG
-    //  Display the ring buffer parameters and contents before we start filling it.
-    dispBuf(ring);
-#endif  
-    for(i = 0; i < TEST_LENGTH; i++)
-    {
-        // first insert the data and make sure no errors are returned.
-        err = insert(ring, data);  
-        CU_ASSERT(err == 0);
-
-        // check the structure members that should NOT have changed
-        CU_ASSERT(ring->Length == TEST_LENGTH);
-        CU_ASSERT(ring->Outi == 0);
-
-        // now check that the input elememt pointer has incremented
-        CU_ASSERT(ring->Ini == (i + 1));
-
-        // check that the entries() function works
-        ents = entries(ring);
-        CU_ASSERT(ents == (i + 1));
-
-        // now check that our data got written to the buffer
-        CU_ASSERT(ring->Buffer[i] == data);
-        data++;
-
-#ifdef DEBUG
-        //  Display the ring buffer parameters and contents during each iteration.
-        dispBuf(ring);
-#endif  
     }
 
-    // at this point we should have a full buffer
-    // let's try to add one more entry.  We should get a -1
-    err = insert(ring, data);  
-    CU_ASSERT(err == -1);
-
-    // check that the entries() function works
-    ents = entries(ring);
-    CU_ASSERT(ents == TEST_LENGTH);
-}
-
-/* Simple test of extract().
- * First, we will verify the the function correctly returns an error
- * for an invalide pointer.
- * Next, we will attempt to empty the buffer and verify each extraction.
- * Finally, we will attempt one more extraction and verify that we get
- * an error for attempting to remove from and empty buffer.  
- * 
- */
-void testREMOVE(void)
-{
-int32_t i;
-int32_t err;
-int32_t ents;
-char data;
-
-    // first, pass a NULL pointer for ring.  This should return -1
-    err = extract((ring_t *)0, &data);
-    CU_ASSERT(err == -1);
-
-    // attempt to empty the buffer and check the data
-    // check the elements of the structure and number of
-    // entries after each extraction.  
-#ifdef DEBUG
-    // Display the ring buffer parameters and contents before we start emptying it.
-    dispBuf(ring);
-#endif  
-    for(i = 0; i < TEST_LENGTH; i++)
-    {
-        // first extract the data and make sure no errors are returned.
-        err = extract(ring, &data);  
-        CU_ASSERT(err == 0);
-
-        // check the structure members that should NOT have changed
-        CU_ASSERT(ring->Length == TEST_LENGTH);
-        CU_ASSERT(ring->Ini == TEST_LENGTH);
-
-        // now check that the Output elememt pointer has incremented
-        CU_ASSERT(ring->Outi == (i + 1));
-
-        // check that the entries() function works
-        ents = entries(ring);
-        CU_ASSERT(ents == (TEST_LENGTH - (i + 1)));
-
-        // now check that we extracted the expected data
-        // remember, we inserted incrementing data in the previous test
-        CU_ASSERT(data == (i+1));
-
-#ifdef DEBUG
-        //  Display the ring buffer parameters and contents during each iteration.
-        dispBuf(ring);
-        printf("Data: %d\r\n", data);
-#endif  
-    }
-
-    // at this point we should have an empty buffer
-    // let's try extracting one more time.  We should get a -1
-    err = extract(ring, &data);  
-    CU_ASSERT(err == -1);
-
-    // check that the entries() function works
-    ents = entries(ring);
-    CU_ASSERT(ents == 0);
-}
-
-/* Simple test of insert() with wrap-around.
- * Attempt to fill the buffer and verify each insertion.  We previously
- * filled and emptied the buffer so the first insertion should cause
- * the indices to wrap-around.  
- * Finally, we will attempt one more insertion and verify that we get
- * an error for attempting to insert into a full buffer.  
- * 
- */
-void testINSERT_wrap(void)
-{
-int32_t i;
-int32_t err;
-int32_t ents;
-char data = 11;
-
-    // attempt to fill the buffer with incrementing data
-    // check the elements of the structure and number of
-    // entries after each insertion.
-#ifdef DEBUG
-    //  Display the ring buffer parameters and contents before we start filling it.
-    dispBuf(ring);
-#endif  
-    for(i = 0; i < TEST_LENGTH; i++)
-    {
-        // first insert the data and make sure no errors are returned.
-        err = insert(ring, data);  
-        CU_ASSERT(err == 0);
-
-        // check the structure members that should NOT have changed
-        CU_ASSERT(ring->Length == TEST_LENGTH);
-        CU_ASSERT(ring->Outi == ring->Length);
-
-        // now check that the input elememt pointer has incremented
-        CU_ASSERT(ring->Ini == (i + (TEST_LENGTH + 1)));
-
-        // check that the entries() function works
-        ents = entries(ring);
-        CU_ASSERT(ents == (i + 1));
-
-        // now check that our data got written to the buffer
-        CU_ASSERT(ring->Buffer[i] == data);
-        data++;
-
-#ifdef DEBUG
-        //  Display the ring buffer parameters and contents during each iteration.
-        dispBuf(ring);
-#endif  
-    }
-
-    // at this point we should have a full buffer
-    // let's try to add one more entry.  We should get a -1
-    err = insert(ring, data);  
-    CU_ASSERT(err == -1);
-
-    // check that the entries() function works
-    ents = entries(ring);
-    CU_ASSERT(ents == TEST_LENGTH);
-}
-
-/* Simple test of extract() with wrap-around.
- * We will attempt to empty the buffer and verify each extraction.  We
- * previously filled, emptied then refilled the buffer.  The first
- * extraction should cause the out index to wrap.  
- * Finally, we will attempt one more extraction and verify that we get
- * an error for attempting to remove from and empty buffer.  
- * 
- */
-void testREMOVE_wrap(void)
-{
-int32_t i;
-int32_t err;
-int32_t ents;
-char data;
-
-    // attempt to empty the buffer and check the data
-    // check the elements of the structure and number of
-    // entries after each extraction.  
-#ifdef DEBUG
-    // Display the ring buffer parameters and contents before we start emptying it.
-    dispBuf(ring);
-#endif  
-    for(i = 0; i < TEST_LENGTH; i++)
-    {
-        // first extract the data and make sure no errors are returned.
-        err = extract(ring, &data);  
-        CU_ASSERT(err == 0);
-
-        // check the structure members that should NOT have changed
-        CU_ASSERT(ring->Length == TEST_LENGTH);
-        CU_ASSERT(ring->Ini == (TEST_LENGTH << 1));
-
-        // now check that the Output elememt pointer has incremented
-        CU_ASSERT(ring->Outi == (TEST_LENGTH + (i + 1)));
-
-        // check that the entries() function works
-        ents = entries(ring);
-        CU_ASSERT(ents == (TEST_LENGTH - (i + 1)));
-
-        // now check that we extracted the expected data
-        // remember, we inserted incrementing data in the previous test
-        CU_ASSERT(data == (i+11));
-
-#ifdef DEBUG
-        //  Display the ring buffer parameters and contents during each iteration.
-        dispBuf(ring);
-        printf("Data: %d\r\n", data);
-#endif  
-    }
-
-    // at this point we should have an empty buffer
-    // let's try extracting one more time.  We should get a -1
-    err = extract(ring, &data);  
-    CU_ASSERT(err == -1);
-
-    // check that the entries() function works
-    ents = entries(ring);
-    CU_ASSERT(ents == 0);
 }
 
 /* The main() function for setting up and running the tests.
@@ -411,6 +189,13 @@ int main()
    CU_basic_set_mode(CU_BRM_VERBOSE);
    CU_basic_run_tests();
    CU_cleanup_registry();
+
+   //print out some of my own statistics
+   printf("%d successful insertions\r\n", g_inserts);
+   printf("%d failed insertions\r\n", f_inserts);
+   printf("%d successful extractions\r\n", g_extracts);
+   printf("%d failed extractions\r\n", f_extracts);
+   printf("total = %d\r\n", g_inserts + f_inserts + g_extracts + f_extracts);
    return CU_get_error();
 }
 
