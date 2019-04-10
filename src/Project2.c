@@ -21,7 +21,6 @@
 */
  
 #include <stdio.h>
-//#include <string.h>
 #include "clock_config.h"
 #include "uart.h"
 #include "led.h"
@@ -44,135 +43,10 @@ int32_t max = 0;
 ring_t *rx_buf = 0;
 ring_t *tx_buf = 0;
 
-//counters for each of the 256 possible characters
-//uint32_t char_ctrs[256] = {0};
-
-////structure for the display update
-//typedef struct
-//{
-//	char sbuf[80];
-//	uint8_t trig;		//set to 1 to trigger the display update to start or start over
-//	uint8_t updating;	//flag indicating that the display is currently updating
-//	uint8_t i;			//index of character count that is currently being upated
-//}disp_struct;
-
 disp_t disp = {0};
 
 //some test code to check how full the buffer gets
 int32_t max = 0;
-
-/**
-* @brief Check if there are any new characters in the RX ring buffer
-*
-* If there are new characters in the ring buffer then we need to add them to
-* our tally
-*
-* @return void.
-*/
-//void RX_task()
-//{
-//	int32_t ents,i;
-//	uint8_t data;
-//
-//	ents = entries(rx_buf);
-//
-//    //check if we have any entries in the RX buffer
-//	//if we do, grab the new characters and count them
-//    for(i = 0; i < ents; i++)
-//    {
-//    	extract(rx_buf,(char *)&data);
-//    	char_ctrs[data]++;
-//
-//    	//tell the display task that we have data to update
-//    	disp.trig = 1;
-//    }
-//}
-
-///**
-//* @brief Build the results display to send out the serial port
-//*
-//* We've got new characters and we need to update the count(s) on the display.
-//*
-//* @return void.
-//*/
-//void Display_task()
-//{
-//	size_t i;
-//	int32_t ents;
-//
-//	ents = entries(tx_buf);
-//
-//	// if the TX buffer isn't empty then we haven't finished the
-//	// previous display update.  Let's wait and try again later.
-//	if(ents != 0)
-//	{
-//		return;
-//	}
-//
-//
-//	//RX/counting task signaled that we have new data
-//	//no matter where we are in the current display update,
-//	//start over.  We don't want to miss any characters
-//	if(disp.trig)
-//	{
-//		disp.i = 0;
-//		disp.trig = 0;
-//		disp.updating = 1;
-//
-//		// clear the screen and print a simple header to delimit one update from the next
-//		sprintf(disp.sbuf, "%c[2J%c[H********************\r\n", (char)27, (char)27);
-//
-//		//move the string to the TX buffer
-//		for(i = 0; i <= strlen(disp.sbuf); i++)
-//		{
-//			insert(tx_buf, disp.sbuf[i]);
-//		}
-//
-//		//kick off the transmit by enabling the interrupt
-//		UART_EN_TX_INT();
-//	}
-//	//Here we are in the middle of a display update
-//	else if(disp.updating)
-//	{
-//		//we only want to print results for characters that actually have a count
-//		if(char_ctrs[disp.i])
-//		{
-//			//characters up to the space (32) are not printable
-//			//we'll display their hex value
-//			if(disp.i <= 32)
-//			{
-//				sprintf(disp.sbuf, "0x%x - %d\r\n", (char)disp.i, char_ctrs[disp.i]);
-//			}
-//			//characters greater than 127 are not defined
-//			//we'll display their hex value
-//			else if(disp.i >= 127)
-//			{
-//				sprintf(disp.sbuf, "0x%x - %d\r\n", (char)disp.i, char_ctrs[disp.i]);
-//			}
-//			else
-//			{
-//				sprintf(disp.sbuf, "%c - %d\r\n", (char)disp.i, char_ctrs[disp.i]);
-//			}
-//
-//			//move the string to the TX buffer
-//			for(i = 0; i <= strlen(disp.sbuf); i++)
-//			{
-//				insert(tx_buf, disp.sbuf[i]);
-//			}
-//
-//			//kick off the transmit by enabling the interrupt
-//			UART_EN_TX_INT();
-//		}
-//		disp.i++;
-//
-//		//once we've looped through all 256 possible characters
-//		//we'll shut down the display update task
-//		if(disp.i == 0)
-//		{
-//			disp.updating = 0;
-//		}
-//	}
-//}
 #endif
 
 /*

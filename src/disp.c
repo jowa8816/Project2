@@ -46,6 +46,9 @@ int32_t disp_init(disp_t *d, ring_t *ibuf, ring_t *obuf, void (*tx_func)())
 	d->i = 0;
 	d->updating = 0;
 
+	//initialize pointers
+	d->ibuf = ibuf;
+	d->obuf = obuf;
 	d->transmit_trig = tx_func;
 
 	return(0);
@@ -55,6 +58,12 @@ void RX_task(disp_t *d)
 {
 	int32_t ents,i;
 	uint8_t data;
+
+	//if pointer isn't initialized return without doing anything
+	if(d == 0)
+	{
+		return;
+	}
 
 	ents = entries(d->ibuf);
 
@@ -81,6 +90,12 @@ void Display_task(disp_t *d)
 {
 	size_t i;
 	int32_t ents;
+
+	//if pointer isn't initialized return without doing anything
+	if(d == 0)
+	{
+		return;
+	}
 
 	ents = entries(d->obuf);
 
