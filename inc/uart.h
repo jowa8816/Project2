@@ -48,6 +48,20 @@ void UART_init();
 uint8_t UART_TX_rdy();
 
 /**
+* @brief Enable UART0 TX Interrupt
+*
+* @return void
+*/
+void UART_EN_TX_INT();
+
+/**
+* @brief Disable UART0 TX Interrupt
+*
+* @return void
+*/
+void UART_DIS_TX_INT();
+
+/**
 * @brief Put a character in the UART0 TX buffer
 *
 * Assume the empty/full status of the buffer has already been checked

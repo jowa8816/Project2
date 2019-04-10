@@ -69,8 +69,17 @@ void UART_init()
 #endif
 
     //enable receiver and transmitter
-    UART0->C2 |= UART0_C2_RE(1) | UART0_C2_TE(1);
+    UART0->C2 |= (UART0_C2_RE(1) | UART0_C2_TE(1));
+}
 
+void UART_EN_TX_INT()
+{
+	UART0->C2 |= UART0_C2_TIE(1);
+}
+
+void UART_DIS_TX_INT()
+{
+	UART0->C2 &= ~UART0_C2_TIE(1);
 }
 
 uint8_t UART_TX_rdy()
