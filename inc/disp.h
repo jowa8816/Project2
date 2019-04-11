@@ -31,14 +31,14 @@
 */
 typedef struct
 {
-	void (*transmit_trig)();		//pointer to a function to trigger transmission of display data
+	void (*transmit_trig)();	//pointer to a function to trigger transmission of display data
 	ring_t *ibuf;				//pointer to input ring buffer.  This contains incoming characters to be counted.
-	ring_t *obuf;				//poiinter to output ring buffer. This contains formatted output strings to be transmitted
+	ring_t *obuf;				//pointer to output ring buffer. This contains formatted output strings to be transmitted
 	uint32_t char_ctrs[256];	//counters for each of the 256 possible characters
 	char sbuf[80];
 	uint8_t trig;				//set to 1 to trigger the display update to start or start over
 	uint8_t updating;			//flag indicating that the display is currently updating
-	uint8_t i;					//index of character count that is currently being upated
+	uint8_t i;					//index of character count that is currently being updated
 }disp_t;
 
 /**
