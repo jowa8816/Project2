@@ -140,6 +140,11 @@ void Display_task(disp_t *d)
 			{
 				sprintf(d->sbuf, "0x%x - %d\r\n", (char)d->i, d->char_ctrs[d->i]);
 			}
+			//special case to print random number
+			else if(d->i == 256)
+			{
+				sprintf(d->sbuf, "rand - %d\r\n", d->char_ctrs[d->i]);
+			}
 			//characters greater than 127 are not defined
 			//we'll display their hex value
 			else if(d->i >= 127)
@@ -162,11 +167,12 @@ void Display_task(disp_t *d)
 		}
 		d->i++;
 
-		//once we've looped through all 256 possible characters
+		//once we've looped through all 256 possible characters (plus the random number)
 		//we'll shut down the display update task
-		if(d->i == 0)
+		if(d->i >= 257)
 		{
 			d->updating = 0;
+			d->i = 0;
 		}
 	}
 }

@@ -26,6 +26,7 @@
 #include "led.h"
 #include "ring.h"
 #include "disp.h"
+#include "ps_rand.h"
 #include "MKL25Z4.h"
 
 //#define UART_TESTING
@@ -39,6 +40,9 @@ int32_t max = 0;
 #elif defined(APPLICATION)
 #define RX_BUF_SIZE	16
 #define TX_BUF_SIZE	32
+
+struct randStruct rnd;
+uint32_t seed = 10;
 
 ring_t *rx_buf = 0;
 ring_t *tx_buf = 0;
@@ -68,14 +72,24 @@ int main(void) {
 #elif defined(APPLICATION)
     rx_buf = ring_init(RX_BUF_SIZE);
     tx_buf = ring_init(TX_BUF_SIZE);
+
+    //setup the random number generator
+    rnd.m = RAND_M;
+    rnd.c = RAND_C;
+    rnd.a = RAND_A;
+    rnd.X = seed;
+
 #endif
 
     //Initialize UART0
     UART_init();
 
+#ifdef APPLICATION
     //Initialize the count and display module
     disp_init(&disp, rx_buf, tx_buf, &UART_EN_TX_INT);
+#endif
 
+    //just letting this print to the console window to let me know the code started.
     printf("Hello World\n");
 
     /* Force the counter to be placed into memory. */
@@ -83,7 +97,7 @@ int main(void) {
     /* Enter an infinite loop, just incrementing a counter. */
     while(1) {
         i++;
-#if defined(UART_BLOCKING) && defined(UART_testing)
+#if defined(UART_BLOCKING) && defined(UART_TESTING)
         temp = UART_RX_block();
        	UART_TX_block(temp);
 #elif !defined(UART_BLOCKING) && defined(UART_TESTING)
@@ -91,6 +105,11 @@ int main(void) {
 #elif defined(APPLICATION)
         RX_task(&disp);
         Display_task(&disp);
+        //generate random numbers in our spare time
+        ps_rand(&rnd);
+        //force the latest random number into the last slot of the counting buffer
+        //we'll display the most recent random number on the next display update
+        disp.char_ctrs[256] = rnd.X;
 #endif
     }
     return 0 ;
